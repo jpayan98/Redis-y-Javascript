@@ -4,149 +4,92 @@
 
 ### 1. Socios
 ```sql
-CREATE TABLE Socios (
-    id_socio INT PRIMARY KEY AUTO_INCREMENT,
-    dni VARCHAR(20) UNIQUE NOT NULL,
+CREATE TABLE socios (
+    id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    apellidos VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    telefono VARCHAR(20),
-    fecha_nacimiento DATE,
-    fecha_alta DATE NOT NULL,
-    fecha_baja DATE NULL,
-    tipo_membresia ENUM('básica', 'estándar', 'premium', 'vip') NOT NULL,
-    estado ENUM('activo', 'suspendido', 'inactivo') DEFAULT 'activo',
-    foto_perfil VARCHAR(255),
-    objetivo ENUM('pérdida_peso', 'ganancia_muscular', 'mantenimiento', 'rendimiento') NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    estado VARCHAR(20)
+        CHECK (estado IN ('activo', 'suspendido', 'inactivo'))
+        DEFAULT 'activo',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 ### 2. Entrenadores
 ```sql
-CREATE TABLE Entrenadores (
-    id_entrenador INT PRIMARY KEY AUTO_INCREMENT,
-    dni VARCHAR(20) UNIQUE NOT NULL,
+CREATE TABLE entrenadores (
+    id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    apellidos VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    telefono VARCHAR(20),
-    especialidad VARCHAR(100), -- Ej: Musculación, Yoga, Spinning, CrossFit
-    certificaciones TEXT, -- Títulos y certificados
-    fecha_contratacion DATE NOT NULL,
-    horario_disponible JSON, -- Horarios de disponibilidad
-    valoracion_promedio DECIMAL(3,2) DEFAULT 0.00,
-    foto_perfil VARCHAR(255),
+    especialidad VARCHAR(30)
+        CHECK (especialidad IN ('yoga','musculacion','spinning','crossfit'))
+        DEFAULT 'musculacion',
     activo BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 ```
 
 ### 3. Clases
 ```sql
-CREATE TABLE Clases (
-    id_clase INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE clases (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    tipo_clase VARCHAR(30)
+        CHECK (tipo_clase IN ('spinning', 'yoga', 'pilates', 'zumba', 'crossfit','musculacion'))
+        NOT NULL,
     id_entrenador INT NOT NULL,
-    nombre VARCHAR(100) NOT NULL, -- Ej: Spinning Avanzado, Yoga Principiantes
-    descripcion TEXT,
-    tipo_clase ENUM('spinning', 'yoga', 'pilates', 'zumba', 'crossfit', 'funcional', 'boxing', 'gap') NOT NULL,
-    nivel ENUM('principiante', 'intermedio', 'avanzado') NOT NULL,
-    duracion INT NOT NULL, -- En minutos
-    aforo_maximo INT NOT NULL,
-    dia_semana ENUM('lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo') NOT NULL,
-    hora_inicio TIME NOT NULL,
-    sala VARCHAR(50) NOT NULL,
-    requiere_reserva BOOLEAN DEFAULT TRUE,
-    activa BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_entrenador) REFERENCES Entrenadores(id_entrenador) ON DELETE RESTRICT
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_entrenador) REFERENCES entrenadores(id)
 );
+
 ```
 
 ### 4. Rutinas
 ```sql
-CREATE TABLE Rutinas (
-    id_rutina INT PRIMARY KEY AUTO_INCREMENT,
-    id_socio INT NOT NULL,
-    id_entrenador INT NOT NULL,
+CREATE TABLE rutinas (
+    id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    descripcion TEXT,
-    objetivo VARCHAR(100),
-    fecha_inicio DATE NOT NULL,
-    fecha_fin DATE,
-    dias_semana SET('lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo') NOT NULL,
-    nivel_dificultad ENUM('principiante', 'intermedio', 'avanzado') NOT NULL,
-    observaciones TEXT,
-    activa BOOLEAN DEFAULT TRUE,
+    nivel_dificultad VARCHAR(20)
+        CHECK (nivel_dificultad IN ('principiante', 'intermedio', 'avanzado'))
+        NOT NULL,
+    id_socio INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_socio) REFERENCES Socios(id_socio) ON DELETE CASCADE,
-    FOREIGN KEY (id_entrenador) REFERENCES Entrenadores(id_entrenador) ON DELETE RESTRICT
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_socio) REFERENCES socios(id)
 );
+
 ```
 
 ### 5. Máquinas/Equipamiento
 ```sql
-CREATE TABLE Maquinas (
-    id_maquina INT PRIMARY KEY AUTO_INCREMENT,
-    codigo VARCHAR(50) UNIQUE NOT NULL,
+CREATE TABLE maquinas (
+    id SERIAL PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
-    tipo ENUM('cardio', 'fuerza', 'funcional', 'libre') NOT NULL,
-    marca VARCHAR(50),
-    modelo VARCHAR(50),
-    zona VARCHAR(50) NOT NULL, -- Área del gimnasio
-    estado ENUM('operativa', 'mantenimiento', 'averiada', 'fuera_servicio') DEFAULT 'operativa',
-    fecha_compra DATE,
-    ultimo_mantenimiento DATE,
-    proximo_mantenimiento DATE,
-    instrucciones_uso TEXT,
-    imagen VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
----
-
-## 🔗 Tablas Intermedias (N:M)
-
-### 6. Asistencias (Socios ↔ Clases)
-```sql
-CREATE TABLE Asistencias (
-    id_asistencia INT PRIMARY KEY AUTO_INCREMENT,
-    id_socio INT NOT NULL,
-    id_clase INT NOT NULL,
-    fecha DATE NOT NULL,
-    hora_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado ENUM('reservada', 'asistió', 'no_asistió', 'cancelada') DEFAULT 'reservada',
-    fecha_cancelacion TIMESTAMP NULL,
-    valoracion INT CHECK (valoracion BETWEEN 1 AND 5),
-    comentario TEXT,
+    tipo VARCHAR(50),
+    estado VARCHAR(30)
+        CHECK (estado IN ('operativa', 'mantenimiento', 'averiada', 'fuera_servicio'))
+        DEFAULT 'operativa',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_socio) REFERENCES Socios(id_socio) ON DELETE CASCADE,
-    FOREIGN KEY (id_clase) REFERENCES Clases(id_clase) ON DELETE CASCADE,
-    UNIQUE KEY unica_reserva (id_socio, id_clase, fecha)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 ```
 
 ### 7. Ejercicios_Rutina (Rutinas ↔ Máquinas)
 ```sql
-CREATE TABLE Ejercicios_Rutina (
-    id_ejercicio INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE rutinas_maquinas (
+    id SERIAL PRIMARY KEY,
     id_rutina INT NOT NULL,
-    id_maquina INT NULL, -- Puede ser NULL si es ejercicio sin máquina
-    nombre_ejercicio VARCHAR(100) NOT NULL,
-    descripcion TEXT,
-    series INT NOT NULL,
-    repeticiones VARCHAR(50), -- Ej: "12-15" o "30 segundos"
-    peso VARCHAR(50), -- Ej: "20kg" o "máximo"
-    descanso INT, -- Segundos entre series
-    orden_ejecucion INT NOT NULL, -- Orden en la rutina
-    dia_semana ENUM('lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo') NOT NULL,
-    notas TEXT,
-    video_demostracion VARCHAR(255),
+    id_maquina INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_rutina) REFERENCES Rutinas(id_rutina) ON DELETE CASCADE,
-    FOREIGN KEY (id_maquina) REFERENCES Maquinas(id_maquina) ON DELETE SET NULL
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_rutina) REFERENCES rutinas(id),
+    FOREIGN KEY (id_maquina) REFERENCES maquinas(id)
 );
+
 ```
 
 ---
