@@ -1,12 +1,19 @@
-import BaseModel from './BaseModel.mjs';
-
 /**
  * Modelo Rutina
  * Representa un plan de entrenamiento asignado a un socio
  */
-class Rutina extends BaseModel {
+class Rutina {
+  static redisClient = null;
+
+  static setClient(client) {
+    Rutina.redisClient = client;
+  }
+
+  static getClient() {
+    return Rutina.redisClient;
+  }
+
   constructor(data = {}) {
-    super();
     // Nota: Usamos id_rutina para mantener consistencia con tu estilo de id_maquina
     this.id_rutina = data.id_rutina || data.id || null; 
     this.nombre = data.nombre || '';

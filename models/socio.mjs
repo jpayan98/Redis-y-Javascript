@@ -1,12 +1,19 @@
-import BaseModel from './BaseModel.mjs';
-
 /**
  * Modelo Socio
  * Representa un miembro del gimnasio
  */
-class Socio extends BaseModel {
+class Socio {
+  static redisClient = null;
+
+  static setClient(client) {
+    Socio.redisClient = client;
+  }
+
+  static getClient() {
+    return Socio.redisClient;
+  }
+
   constructor(data = {}) {
-    super();
     this.id = data.id || null;
     this.nombre = data.nombre || '';
     this.email = data.email || '';
