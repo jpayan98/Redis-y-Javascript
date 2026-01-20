@@ -1,16 +1,16 @@
-import BaseModel from './BaseModel.mjs';
-
 /**
  * Modelo Socio
  * Representa un miembro del gimnasio
  */
-class Socio extends BaseModel {
+class Socio {
   constructor(data = {}) {
-    super();
-    this.id = data.id || null;
+    this.id_socio = data.id_socio || null;
     this.nombre = data.nombre || '';
+    this.apellidos = data.apellidos || '';
+    this.telefono = data.telefono || '';
     this.email = data.email || '';
-    this.estado = data.estado || 'activo';
+    this.fecha_alta = data.fecha_alta || null;
+    this.activo = data.activo !== undefined ? data.activo : true;
     this.created_at = data.created_at || null;
     this.updated_at = data.updated_at || null;
   }
@@ -21,10 +21,13 @@ class Socio extends BaseModel {
    */
   toJSON() {
     return {
-      id: this.id,
+      id_socio: this.id_socio,
       nombre: this.nombre,
+      apellidos: this.apellidos,
+      telefono: this.telefono,
       email: this.email,
-      estado: this.estado,
+      fecha_alta: this.fecha_alta,
+      activo: this.activo,
       created_at: this.created_at,
       updated_at: this.updated_at
     };
@@ -32,106 +35,40 @@ class Socio extends BaseModel {
 
   /**
    * Serialización para respuestas públicas de la API
-   * @returns {Object} Datos seguros del socio
+   * @returns {Object} Datos seguros del socio (sin información sensible)
    */
   toPublic() {
     return {
-      id: this.id,
+      id_socio: this.id_socio,
       nombre: this.nombre,
+      apellidos: this.apellidos,
       email: this.email,
-      estado: this.estado
+      fecha_alta: this.fecha_alta,
+      activo: this.activo
     };
+  }
+
+  /**
+   * Obtiene el nombre completo del socio
+   * @returns {string} Nombre y apellidos concatenados
+   */
+  getNombreCompleto() {
+    return `${this.nombre} ${this.apellidos}`.trim();
   }
 
   /**
    * Valida si el socio tiene todos los campos requeridos
-   * @returns {Object} { valid: boolean, errors: string[] }
+   * @returns {boolean} true si es válido
    */
-  validate() {
-    const errors = [];
-
-    if (!this.nombre || this.nombre.trim().length === 0) {
-      errors.push('El nombre es requerido');
-    }
-
-    if (!this.email || this.email.trim().length === 0) {
-      errors.push('El email es requerido');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
-      errors.push('El email no tiene un formato válido');
-    }
-
-    if (this.estado && !['activo', 'suspendido', 'inactivo'].includes(this.estado)) {
-      errors.push('El estado debe ser: activo, suspendido o inactivo');
-    }
-
-    return {
-      valid: errors.length === 0,
-      errors
-    };
-  }
-
-  /**
-   * Genera la clave de caché para este socio
-   * @returns {string} Clave de Redis
-   */
-  getCacheKey() {
-    return `socio:${this.id}`;
-  }
-
-  /**
-   * Guarda este socio en caché
-   * @param {number} ttl - Tiempo de vida en segundos (por defecto 300 = 5 min)
-   */
-  async saveToCache(ttl = 300) {
-    const client = Socio.getClient();
-    if (client && this.id) {
-      await client.setEx(
-        this.getCacheKey(),
-        ttl,
-        JSON.stringify(this.toJSON())
-      );
-    }
-  }
-
-  /**
-   * Invalida el caché de este socio
-   */
-  async invalidateCache() {
-    const client = Socio.getClient();
-    if (client && this.id) {
-      await client.del(this.getCacheKey());
-      await client.del('socios:all');
-      await client.del(`socios:estado:${this.estado}`);
-    }
-  }
-
-  /**
-   * Obtiene un socio desde caché
-   * @param {number} id - ID del socio
-   * @returns {Socio|null} Instancia de Socio o null si no existe en caché
-   */
-  static async getFromCache(id) {
-    const client = Socio.getClient();
-    if (!client) return null;
-
-    const cached = await client.get(`socio:${id}`);
-    if (cached) {
-      return new Socio(JSON.parse(cached));
-    }
-    return null;
-  }
-
-  /**
-   * Invalida todo el caché relacionado con socios
-   */
-  static async invalidateAllCache() {
-    const client = Socio.getClient();
-    if (client) {
-      const keys = await client.keys('socio*');
-      if (keys.length > 0) {
-        await client.del(keys);
-      }
-    }
+  isValid() {
+    return (
+      this.nombre && 
+      this.nombre.trim().length > 0 &&
+      this.apellidos && 
+      this.apellidos.trim().length > 0 &&
+      this.email && 
+      this.email.trim().length > 0
+    );
   }
 }
 
