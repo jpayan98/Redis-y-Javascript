@@ -9,12 +9,12 @@ class SocioService {
     this.socioRepository = socioRepository;
   }
 
-  async getAll() {
+  async obtenerTodos() {
     const socios = await this.socioRepository.findAll();
     return socios.map(s => s.toPublic());
   }
 
-  async getById(id) {
+  async obtenerPorId(id) {
     if (!id || isNaN(id)) {
       throw new Error('ID inválido');
     }
@@ -27,7 +27,7 @@ class SocioService {
     return socio.toPublic();
   }
 
-  async getByEstado(estado) {
+  async obtnerPorEstado(estado) {
     const estadosValidos = ['activo', 'suspendido', 'inactivo'];
     if (!estadosValidos.includes(estado)) {
       throw new Error('Estado inválido. Debe ser: activo, suspendido o inactivo');
@@ -37,7 +37,7 @@ class SocioService {
     return socios.map(s => s.toPublic());
   }
 
-  async create(data) {
+  async crear(data) {
     // Crear instancia para validar
     const socio = new Socio(data);
     const validation = socio.validate();
@@ -56,7 +56,7 @@ class SocioService {
     return nuevoSocio.toPublic();
   }
 
-  async update(id, data) {
+  async actualizar(id, data) {
     if (!id || isNaN(id)) {
       throw new Error('ID inválido');
     }
@@ -87,7 +87,7 @@ class SocioService {
     return socio.toPublic();
   }
 
-  async delete(id) {
+  async borrar(id) {
     if (!id || isNaN(id)) {
       throw new Error('ID inválido');
     }

@@ -28,13 +28,13 @@ class EjercicioService {
         return ejercicio.toPublic();
     }
 
-    async obtenerPorGrupoMuscular(tipo) {
-        const grupoMuscularValidos = ['cardio', 'fuerza', 'flexibilidad', 'equilibrio'];
-        if (!grupoMuscularValidos.includes(tipo)) {
-            throw new Error('Tipo inválido. Debe ser: cardio, fuerza, flexibilidad o equilibrio');
+    async obtenerPorGrupoMuscular(grupo_muscular) {
+        const grupoMuscularValidos = ['pecho', 'espalda', 'piernas', 'brazos', 'hombros', 'abdomen', 'gluteos'];
+        if (!grupoMuscularValidos.includes(grupo_muscular)) {
+            throw new Error('Grupo muscular inválido. Debe ser: pecho, espalda, piernas, brazos, hombros, abdomen o gluteos');
         }
 
-        const ejercicios = await this.ejercicioRepository.findByTipo(tipo);
+        const ejercicios = await this.ejercicioRepository.findByGrupoMuscular(grupo_muscular);
         return ejercicios.map(e => e.toPublic());
     }
 

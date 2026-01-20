@@ -7,7 +7,7 @@ class SocioController {
     this.socioService = socioService;
   }
 
-  getAll = async (req, res) => {
+  obtenerTodos = async (req, res) => {
     try {
       const socios = await this.socioService.getAll();
       res.json(socios);
@@ -16,7 +16,7 @@ class SocioController {
     }
   };
 
-  getById = async (req, res) => {
+  obtenerPorId = async (req, res) => {
     try {
       const { id } = req.params;
       const socio = await this.socioService.getById(parseInt(id));
@@ -32,7 +32,7 @@ class SocioController {
     }
   };
 
-  getByEstado = async (req, res) => {
+  obtenerPorEstado = async (req, res) => {
     try {
       const { estado } = req.params;
       const socios = await this.socioService.getByEstado(estado);
@@ -45,7 +45,7 @@ class SocioController {
     }
   };
 
-  create = async (req, res) => {
+  crear = async (req, res) => {
     try {
       const socio = await this.socioService.create(req.body);
       res.status(201).json(socio);
@@ -57,7 +57,7 @@ class SocioController {
     }
   };
 
-  update = async (req, res) => {
+  actualizar = async (req, res) => {
     try {
       const { id } = req.params;
       const socio = await this.socioService.update(parseInt(id), req.body);
@@ -73,7 +73,7 @@ class SocioController {
     }
   };
 
-  delete = async (req, res) => {
+  borrar = async (req, res) => {
     try {
       const { id } = req.params;
       const result = await this.socioService.delete(parseInt(id));
