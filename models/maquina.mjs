@@ -1,12 +1,19 @@
-import BaseModel from './BaseModel.mjs';
-
 /**
  * Modelo Maquina
  * Representa una máquina o equipo del gimnasio
  */
-class Maquina extends BaseModel {
+class Maquina {
+  static redisClient = null;
+
+  static setClient(client) {
+    Maquina.redisClient = client;
+  }
+
+  static getClient() {
+    return Maquina.redisClient;
+  }
+
   constructor(data = {}) {
-    super();
     this.id = data.id || null;
     this.nombre = data.nombre || '';
     this.tipo = data.tipo || '';
