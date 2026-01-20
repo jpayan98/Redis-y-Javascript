@@ -15,7 +15,7 @@ class Rutina {
 
   constructor(data = {}) {
     // Nota: Usamos id_rutina para mantener consistencia con tu estilo de id_maquina
-    this.id_rutina = data.id_rutina || data.id || null; 
+    this.id = data.id || data.id || null; 
     this.nombre = data.nombre || '';
     this.nivel_dificultad = data.nivel_dificultad || 'principiante';
     this.id_socio = data.id_socio || null;
