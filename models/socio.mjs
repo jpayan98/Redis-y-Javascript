@@ -7,13 +7,10 @@ import BaseModel from './BaseModel.mjs';
 class Socio extends BaseModel {
   constructor(data = {}) {
     super();
-    this.id_socio = data.id_socio || null;
+    this.id = data.id || null;
     this.nombre = data.nombre || '';
-    this.apellidos = data.apellidos || '';
-    this.telefono = data.telefono || '';
     this.email = data.email || '';
-    this.fecha_alta = data.fecha_alta || null;
-    this.activo = data.activo !== undefined ? data.activo : true;
+    this.estado = data.estado || 'activo';
     this.created_at = data.created_at || null;
     this.updated_at = data.updated_at || null;
   }
@@ -24,13 +21,10 @@ class Socio extends BaseModel {
    */
   toJSON() {
     return {
-      id_socio: this.id_socio,
+      id: this.id,
       nombre: this.nombre,
-      apellidos: this.apellidos,
-      telefono: this.telefono,
       email: this.email,
-      fecha_alta: this.fecha_alta,
-      activo: this.activo,
+      estado: this.estado,
       created_at: this.created_at,
       updated_at: this.updated_at
     };
@@ -38,40 +32,42 @@ class Socio extends BaseModel {
 
   /**
    * Serialización para respuestas públicas de la API
-   * @returns {Object} Datos seguros del socio (sin información sensible)
+   * @returns {Object} Datos seguros del socio
    */
   toPublic() {
     return {
-      id_socio: this.id_socio,
+      id: this.id,
       nombre: this.nombre,
-      apellidos: this.apellidos,
       email: this.email,
-      fecha_alta: this.fecha_alta,
-      activo: this.activo
+      estado: this.estado
     };
   }
 
   /**
-   * Obtiene el nombre completo del socio
-   * @returns {string} Nombre y apellidos concatenados
-   */
-  getNombreCompleto() {
-    return `${this.nombre} ${this.apellidos}`.trim();
-  }
-
-  /**
    * Valida si el socio tiene todos los campos requeridos
-   * @returns {boolean} true si es válido
+   * @returns {Object} { valid: boolean, errors: string[] }
    */
-  isValid() {
-    return (
-      this.nombre && 
-      this.nombre.trim().length > 0 &&
-      this.apellidos && 
-      this.apellidos.trim().length > 0 &&
-      this.email && 
-      this.email.trim().length > 0
-    );
+  validate() {
+    const errors = [];
+
+    if (!this.nombre || this.nombre.trim().length === 0) {
+      errors.push('El nombre es requerido');
+    }
+
+    if (!this.email || this.email.trim().length === 0) {
+      errors.push('El email es requerido');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) {
+      errors.push('El email no tiene un formato válido');
+    }
+
+    if (this.estado && !['activo', 'suspendido', 'inactivo'].includes(this.estado)) {
+      errors.push('El estado debe ser: activo, suspendido o inactivo');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
   }
 
   /**
@@ -79,7 +75,7 @@ class Socio extends BaseModel {
    * @returns {string} Clave de Redis
    */
   getCacheKey() {
-    return `socio:${this.id_socio}`;
+    return `socio:${this.id}`;
   }
 
   /**
@@ -88,7 +84,7 @@ class Socio extends BaseModel {
    */
   async saveToCache(ttl = 300) {
     const client = Socio.getClient();
-    if (client && this.id_socio) {
+    if (client && this.id) {
       await client.setEx(
         this.getCacheKey(),
         ttl,
@@ -102,11 +98,10 @@ class Socio extends BaseModel {
    */
   async invalidateCache() {
     const client = Socio.getClient();
-    if (client && this.id_socio) {
+    if (client && this.id) {
       await client.del(this.getCacheKey());
-      // También invalidar listados
       await client.del('socios:all');
-      await client.del('socios:activos');
+      await client.del(`socios:estado:${this.estado}`);
     }
   }
 
@@ -132,12 +127,10 @@ class Socio extends BaseModel {
   static async invalidateAllCache() {
     const client = Socio.getClient();
     if (client) {
-      const keys = await client.keys('socio:*');
+      const keys = await client.keys('socio*');
       if (keys.length > 0) {
         await client.del(keys);
       }
-      await client.del('socios:all');
-      await client.del('socios:activos');
     }
   }
 }

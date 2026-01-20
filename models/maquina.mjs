@@ -7,119 +7,85 @@ import BaseModel from './BaseModel.mjs';
 class Maquina extends BaseModel {
   constructor(data = {}) {
     super();
-    this.id_maquina = data.id_maquina || null;
+    this.id = data.id || null;
     this.nombre = data.nombre || '';
     this.tipo = data.tipo || '';
-    this.zona = data.zona || '';
-    this.estado = data.estado || 'Operativa';
+    this.estado = data.estado || 'operativa';
     this.created_at = data.created_at || null;
     this.updated_at = data.updated_at || null;
   }
 
-  /**
-   * Serialización completa del objeto
-   * @returns {Object} Todos los datos de la máquina
-   */
   toJSON() {
     return {
-      id_maquina: this.id_maquina,
+      id: this.id,
       nombre: this.nombre,
       tipo: this.tipo,
-      zona: this.zona,
       estado: this.estado,
       created_at: this.created_at,
       updated_at: this.updated_at
     };
   }
 
-  /**
-   * Serialización para respuestas públicas de la API
-   * @returns {Object} Datos seguros de la máquina
-   */
   toPublic() {
     return {
-      id_maquina: this.id_maquina,
+      id: this.id,
       nombre: this.nombre,
       tipo: this.tipo,
-      zona: this.zona,
       estado: this.estado
     };
   }
 
-  /**
-   * Verifica si la máquina está operativa
-   * @returns {boolean} true si está operativa
-   */
+  validate() {
+    const errors = [];
+    const estadosValidos = ['operativa', 'mantenimiento', 'averiada', 'fuera_servicio'];
+
+    if (!this.nombre || this.nombre.trim().length === 0) {
+      errors.push('El nombre es requerido');
+    }
+
+    if (!this.tipo || this.tipo.trim().length === 0) {
+      errors.push('El tipo es requerido');
+    }
+
+    if (this.estado && !estadosValidos.includes(this.estado)) {
+      errors.push('El estado debe ser: operativa, mantenimiento, averiada o fuera_servicio');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors
+    };
+  }
+
   isOperativa() {
-    return this.estado === 'Operativa';
+    return this.estado === 'operativa';
   }
 
-  /**
-   * Verifica si la máquina necesita mantenimiento
-   * @returns {boolean} true si necesita mantenimiento
-   */
   necesitaMantenimiento() {
-    return this.estado === 'Mantenimiento' || this.estado === 'Averiada';
+    return this.estado === 'mantenimiento' || this.estado === 'averiada';
   }
 
-  /**
-   * Valida si la máquina tiene todos los campos requeridos
-   * @returns {boolean} true si es válida
-   */
-  isValid() {
-    return (
-      this.nombre && 
-      this.nombre.trim().length > 0 &&
-      this.tipo && 
-      this.tipo.trim().length > 0 &&
-      this.zona && 
-      this.zona.trim().length > 0
-    );
-  }
-
-  /**
-   * Genera la clave de caché para esta máquina
-   * @returns {string} Clave de Redis
-   */
   getCacheKey() {
-    return `maquina:${this.id_maquina}`;
+    return `maquina:${this.id}`;
   }
 
-  /**
-   * Guarda esta máquina en caché
-   * @param {number} ttl - Tiempo de vida en segundos (por defecto 600 = 10 min)
-   */
   async saveToCache(ttl = 600) {
     const client = Maquina.getClient();
-    if (client && this.id_maquina) {
-      await client.setEx(
-        this.getCacheKey(),
-        ttl,
-        JSON.stringify(this.toJSON())
-      );
+    if (client && this.id) {
+      await client.setEx(this.getCacheKey(), ttl, JSON.stringify(this.toJSON()));
     }
   }
 
-  /**
-   * Invalida el caché de esta máquina
-   */
   async invalidateCache() {
     const client = Maquina.getClient();
-    if (client && this.id_maquina) {
+    if (client && this.id) {
       await client.del(this.getCacheKey());
-      // También invalidar listados
       await client.del('maquinas:all');
       await client.del('maquinas:operativas');
       await client.del(`maquinas:tipo:${this.tipo}`);
-      await client.del(`maquinas:zona:${this.zona}`);
     }
   }
 
-  /**
-   * Obtiene una máquina desde caché
-   * @param {number} id - ID de la máquina
-   * @returns {Maquina|null} Instancia de Maquina o null si no existe en caché
-   */
   static async getFromCache(id) {
     const client = Maquina.getClient();
     if (!client) return null;
@@ -131,9 +97,6 @@ class Maquina extends BaseModel {
     return null;
   }
 
-  /**
-   * Invalida todo el caché relacionado con máquinas
-   */
   static async invalidateAllCache() {
     const client = Maquina.getClient();
     if (client) {
