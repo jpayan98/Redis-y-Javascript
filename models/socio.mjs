@@ -3,10 +3,6 @@
  * Representa un miembro del gimnasio
  */
 class Socio {
-<<<<<<< HEAD
-  constructor(data = {}) {
-    this.id_socio = data.id_socio || null;
-=======
   static redisClient = null;
 
   static setClient(client) {
@@ -19,7 +15,6 @@ class Socio {
 
   constructor(data = {}) {
     this.id = data.id || null;
->>>>>>> 31c2f5c7d281b80eba90549663b4194a49142013
     this.nombre = data.nombre || '';
     this.apellidos = data.apellidos || '';
     this.telefono = data.telefono || '';
