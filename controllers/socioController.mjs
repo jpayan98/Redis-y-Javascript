@@ -9,6 +9,13 @@ class SocioController {
 
   getAll = async (req, res) => {
     try {
+      // Si es user, solo devolver su propio perfil
+      if (req.userRole === 'user') {
+        const socio = await this.socioService.getById(req.userId);
+        return res.json([socio]); // Devolver array con un solo elemento
+      }
+      
+      // DBA y Admin ven todos
       const socios = await this.socioService.getAll();
       res.json(socios);
     } catch (error) {
@@ -32,15 +39,12 @@ class SocioController {
     }
   };
 
-  getByEstado = async (req, res) => {
+  getByActivo = async (req, res) => {
     try {
-      const { estado } = req.params;
-      const socios = await this.socioService.getByEstado(estado);
+      const { activo } = req.params;
+      const socios = await this.socioService.getByActivo(activo);
       res.json(socios);
     } catch (error) {
-      if (error.message.includes('Estado inválido')) {
-        return res.status(400).json({ error: error.message });
-      }
       res.status(500).json({ error: error.message });
     }
   };
@@ -50,7 +54,10 @@ class SocioController {
       const socio = await this.socioService.create(req.body);
       res.status(201).json(socio);
     } catch (error) {
-      if (error.message.includes('requerido') || error.message.includes('formato') || error.message.includes('Ya existe')) {
+      if (error.message.includes('requerido') || 
+          error.message.includes('formato') || 
+          error.message.includes('Ya existe') ||
+          error.message.includes('rol')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -66,7 +73,9 @@ class SocioController {
       if (error.message === 'Socio no encontrado') {
         return res.status(404).json({ error: error.message });
       }
-      if (error.message === 'ID inválido' || error.message.includes('requerido') || error.message.includes('Ya existe')) {
+      if (error.message === 'ID inválido' || 
+          error.message.includes('requerido') || 
+          error.message.includes('Ya existe')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -77,6 +86,22 @@ class SocioController {
     try {
       const { id } = req.params;
       const result = await this.socioService.delete(parseInt(id));
+      res.json(result);
+    } catch (error) {
+      if (error.message === 'Socio no encontrado') {
+        return res.status(404).json({ error: error.message });
+      }
+      if (error.message === 'ID inválido') {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  };
+
+  regenerateApiKey = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await this.socioService.regenerateApiKey(parseInt(id));
       res.json(result);
     } catch (error) {
       if (error.message === 'Socio no encontrado') {

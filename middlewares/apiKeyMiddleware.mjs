@@ -3,6 +3,7 @@ import redis from '../config/redis.mjs';
 
 /**
  * Middleware para validar API Keys y aplicar rate limiting
+ * Usa la tabla 'socios' en lugar de 'api_keys'
  */
 export const apiKeyMiddleware = async (req, res, next) => {
   const apiKey = req.header('X-API-Key');
@@ -11,16 +12,16 @@ export const apiKeyMiddleware = async (req, res, next) => {
     return res.status(401).json({ error: 'Falta API Key' });
   }
 
-  // Comprobar que la API key existe y está activa en Supabase
-  const { data: key, error } = await supabase
-    .from('api_keys')
+  // Comprobar que la API key existe y el socio está activo en Supabase
+  const { data: socio, error } = await supabase
+    .from('socios')
     .select('*')
     .eq('api_key', apiKey)
-    .eq('is_active', true)
+    .eq('activo', true)
     .single();
 
-  if (error || !key) {
-    return res.status(403).json({ error: 'API Key Inválida' });
+  if (error || !socio) {
+    return res.status(403).json({ error: 'API Key Inválida o socio inactivo' });
   }
 
   // Rate limiting con Redis (ventana de 1 minuto)
@@ -33,7 +34,7 @@ export const apiKeyMiddleware = async (req, res, next) => {
       await redis.expire(redisKey, 60);
     }
 
-    if (count > 10) {
+    if (count > 100) {
       return res.status(429).json({ error: 'Rate limit exceeded' });
     }
   } catch (redisError) {
@@ -41,7 +42,21 @@ export const apiKeyMiddleware = async (req, res, next) => {
     // Continuar sin rate limiting si Redis falla
   }
 
-  // Adjuntar información del cliente a la request
-  req.client = key;
+  // Adjuntar información del socio a la request
+  // Estructura compatible con el código anterior
+  req.client = {
+    id: socio.id,
+    nombre: socio.nombre,
+    apellidos: socio.apellidos,
+    email: socio.email,
+    telefono: socio.telefono,
+    role: socio.role || 'user',
+    apiKey: socio.api_key,
+    activo: socio.activo,
+    fecha_alta: socio.fecha_alta,
+    created_at: socio.created_at,
+    updated_at: socio.updated_at
+  };
+  
   next();
 };

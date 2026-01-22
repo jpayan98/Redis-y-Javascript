@@ -21,6 +21,9 @@ class EjercicioService {
     return ejercicio.toPublic();
 
     }
+    async getByGrupoMuscular(grupo_muscular){
+      const gruposValidos= []
+    }
 
     async getByNivelDificultad8(nivelDificultad) {
     const nivelesValidos = ['principiante', 'intermedio', 'avanzado'];

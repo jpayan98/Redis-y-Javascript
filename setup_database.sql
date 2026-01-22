@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS EJERCICIOS(
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     descripcion TEXT,
-    grupo_muscular VARCHAR(100) NOT NULL,
+    grupo_muscular VARCHAR(100) NOT NULL CHECK(grupo_muscular in ('piernas','pecho','cardio','espalda','brazo')),
     id_maquina INTEGER REFERENCES MAQUINAS(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL

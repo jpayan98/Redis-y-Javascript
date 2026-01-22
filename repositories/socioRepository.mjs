@@ -1,4 +1,5 @@
 import Socio from '../models/socio.mjs';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Repository de Socio
@@ -49,7 +50,7 @@ class SocioRepository {
       .eq('id', id)
       .single();
 
-    if (error) throw error;
+    if (error && error.code !== 'PGRST116') throw error;
     if (!data) return null;
 
     const socio = new Socio(data);
@@ -71,10 +72,39 @@ class SocioRepository {
     return data ? new Socio(data) : null;
   }
 
-  async findByEstado(estado) {
+  async findByApiKey(apiKey) {
     // Intentar obtener de caché
     if (this.redis) {
-      const cached = await this.redis.get(`socios:estado:${estado}`);
+      const cached = await this.redis.get(`socios:apikey:${apiKey}`);
+      if (cached) {
+        return new Socio(JSON.parse(cached));
+      }
+    }
+
+    const { data, error } = await this.supabase
+      .from('socios')
+      .select('*')
+      .eq('api_key', apiKey)
+      .eq('activo', true)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    if (!data) return null;
+
+    const socio = new Socio(data);
+
+    // Guardar en caché
+    if (this.redis) {
+      await this.redis.setEx(`socios:apikey:${apiKey}`, 600, JSON.stringify(data));
+    }
+
+    return socio;
+  }
+
+  async findByActivo(activo) {
+    // Intentar obtener de caché
+    if (this.redis) {
+      const cached = await this.redis.get(`socios:activo:${activo}`);
       if (cached) {
         const data = JSON.parse(cached);
         return data.map(s => new Socio(s));
@@ -84,25 +114,34 @@ class SocioRepository {
     const { data, error } = await this.supabase
       .from('socios')
       .select('*')
-      .eq('estado', estado);
+      .eq('activo', activo)
+      .order('id', { ascending: true });
 
     if (error) throw error;
 
     // Guardar en caché
     if (this.redis && data) {
-      await this.redis.setEx(`socios:estado:${estado}`, 300, JSON.stringify(data));
+      await this.redis.setEx(`socios:activo:${activo}`, 300, JSON.stringify(data));
     }
 
     return data.map(s => new Socio(s));
   }
 
   async create(socioData) {
+    // Generar API Key si no se proporciona
+    const apiKey = socioData.api_key || uuidv4();
+    const role = socioData.role || 'user';
+
     const { data, error } = await this.supabase
       .from('socios')
       .insert({
         nombre: socioData.nombre,
+        apellidos: socioData.apellidos,
         email: socioData.email,
-        estado: socioData.estado || 'activo'
+        telefono: socioData.telefono || null,
+        activo: socioData.activo !== undefined ? socioData.activo : true,
+        api_key: apiKey,
+        role: role
       })
       .select()
       .single();
@@ -118,14 +157,23 @@ class SocioRepository {
   }
 
   async update(id, socioData) {
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+
+    // Solo actualizar campos que vienen en socioData
+    if (socioData.nombre !== undefined) updateData.nombre = socioData.nombre;
+    if (socioData.apellidos !== undefined) updateData.apellidos = socioData.apellidos;
+    if (socioData.email !== undefined) updateData.email = socioData.email;
+    if (socioData.telefono !== undefined) updateData.telefono = socioData.telefono;
+    if (socioData.activo !== undefined) updateData.activo = socioData.activo;
+    if (socioData.role !== undefined) updateData.role = socioData.role;
+    // La API key normalmente NO debe actualizarse, pero si viene...
+    if (socioData.api_key !== undefined) updateData.api_key = socioData.api_key;
+
     const { data, error } = await this.supabase
       .from('socios')
-      .update({
-        nombre: socioData.nombre,
-        email: socioData.email,
-        estado: socioData.estado,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -158,6 +206,28 @@ class SocioRepository {
     }
 
     return true;
+  }
+
+  async regenerateApiKey(id) {
+    const newApiKey = uuidv4();
+
+    const { data, error } = await this.supabase
+      .from('socios')
+      .update({
+        api_key: newApiKey,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    if (!data) return null;
+
+    const socio = new Socio(data);
+    await socio.invalidateCache();
+
+    return socio;
   }
 }
 

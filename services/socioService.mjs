@@ -11,7 +11,7 @@ class SocioService {
 
   async getAll() {
     const socios = await this.socioRepository.findAll();
-    return socios.map(s => s.toPublic());
+    return socios.map(s => s.toSafe());
   }
 
   async getById(id) {
@@ -24,17 +24,15 @@ class SocioService {
       throw new Error('Socio no encontrado');
     }
 
-    return socio.toPublic();
+    return socio.toSafe();
   }
 
-  async getByEstado(estado) {
-    const estadosValidos = ['activo', 'suspendido', 'inactivo'];
-    if (!estadosValidos.includes(estado)) {
-      throw new Error('Estado inválido. Debe ser: activo, suspendido o inactivo');
-    }
-
-    const socios = await this.socioRepository.findByEstado(estado);
-    return socios.map(s => s.toPublic());
+  async getByActivo(activo) {
+    // Convertir string a boolean si es necesario
+    const isActivo = activo === 'true' || activo === true;
+    
+    const socios = await this.socioRepository.findByActivo(isActivo);
+    return socios.map(s => s.toSafe());
   }
 
   async create(data) {
@@ -53,7 +51,13 @@ class SocioService {
     }
 
     const nuevoSocio = await this.socioRepository.create(data);
-    return nuevoSocio.toPublic();
+    
+    // Devolver con API key solo al crear
+    return {
+      ...nuevoSocio.toSafe(),
+      api_key: nuevoSocio.api_key,
+      message: 'Socio creado exitosamente. Guarda tu API Key, no se mostrará de nuevo.'
+    };
   }
 
   async update(id, data) {
@@ -84,7 +88,7 @@ class SocioService {
     }
 
     const socio = await this.socioRepository.update(id, data);
-    return socio.toPublic();
+    return socio.toSafe();
   }
 
   async delete(id) {
@@ -100,6 +104,25 @@ class SocioService {
 
     await this.socioRepository.delete(id);
     return { message: 'Socio eliminado correctamente' };
+  }
+
+  async regenerateApiKey(id) {
+    if (!id || isNaN(id)) {
+      throw new Error('ID inválido');
+    }
+
+    const socio = await this.socioRepository.findById(id);
+    if (!socio) {
+      throw new Error('Socio no encontrado');
+    }
+
+    const socioActualizado = await this.socioRepository.regenerateApiKey(id);
+    
+    return {
+      ...socioActualizado.toSafe(),
+      api_key: socioActualizado.api_key,
+      message: 'API Key regenerada exitosamente. Guarda la nueva clave.'
+    };
   }
 }
 
