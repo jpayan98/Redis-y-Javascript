@@ -51,6 +51,23 @@ class Socio {
     };
   }
 
+  toSafe() {
+
+  return {
+    id: this.id,
+    nombre: this.nombre,
+    apellidos: this.apellidos,
+    telefono: this.telefono,
+    email: this.email,
+    fecha_alta: this.fecha_alta,
+    activo: this.activo,
+    created_at: this.created_at,
+    updated_at: this.updated_at,
+    role: this.role
+
+  };
+}
+
   validate() {
     const errors = [];
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
