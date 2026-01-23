@@ -1,51 +1,60 @@
+// routes/maquinaRoutes.mjs
 import { Router } from 'express';
 import { checkPermission } from '../middlewares/roleMiddleware.mjs';
 
-/**
- * Routes de Maquinas
- * DBA y Admin tienen acceso completo
- * User solo puede leer
- */
-const createMaquinasRoutes = (maquinasController) => {
+const createMaquinaRoutes = (maquinaController) => {
   const router = Router();
 
-  // GET /maquinas - Obtener todas las máquinas (Todos)
-  router.get('/', 
+  // GET /maquinas - Listar todas las máquinas
+  // Todos pueden ver (user, admin, dba)
+  router.get('/',
     checkPermission('maquinas', 'read'),
-    maquinasController.getAll
+    maquinaController.getAll
   );
 
-  // GET /maquinas/estado/:estado - Obtener máquinas por estado (Todos)
-  router.get('/estado/:estado', 
+  // GET /maquinas/estado/:estado - Filtrar por estado
+  // Todos pueden ver
+  router.get('/estado/:estado',
     checkPermission('maquinas', 'read'),
-    maquinasController.getByEstado
+    maquinaController.getByEstado
   );
 
-  // GET /maquinas/:id - Obtener máquina por ID (Todos)
-  router.get('/:id', 
+  // GET /maquinas/tipo/:tipo - Filtrar por tipo
+  // Todos pueden ver
+  router.get('/tipo/:tipo',
     checkPermission('maquinas', 'read'),
-    maquinasController.getById
+    maquinaController.getByTipo
   );
 
-  // POST /maquinas - Crear nueva máquina (DBA y Admin)
-  router.post('/', 
+  // GET /maquinas/:id - Obtener máquina por ID
+  // Todos pueden ver
+  router.get('/:id',
+    checkPermission('maquinas', 'read'),
+    maquinaController.getById
+  );
+
+  // POST /maquinas - Crear nueva máquina
+  // Solo admin y dba
+  router.post('/',
     checkPermission('maquinas', 'create'),
-    maquinasController.create
+    maquinaController.create
   );
 
-  // PUT /maquinas/:id - Actualizar máquina (DBA y Admin)
-  router.put('/:id', 
+  // PUT /maquinas/:id - Actualizar máquina
+  // Solo admin y dba
+  router.put('/:id',
     checkPermission('maquinas', 'update'),
-    maquinasController.update
+    maquinaController.update
   );
 
-  // DELETE /maquinas/:id - Eliminar máquina (DBA y Admin)
-  router.delete('/:id', 
+  // DELETE /maquinas/:id - Eliminar máquina
+  // Solo admin y dba
+  router.delete('/:id',
     checkPermission('maquinas', 'delete'),
-    maquinasController.delete
+    maquinaController.delete
   );
 
   return router;
 };
 
-export default createMaquinasRoutes;
+export default createMaquinaRoutes;

@@ -60,6 +60,7 @@ export const permissions = {
   }
 };
 
+
 export const checkPermission = (resource, action) => {
   return async (req, res, next) => {
     await new Promise((resolve, reject) => {

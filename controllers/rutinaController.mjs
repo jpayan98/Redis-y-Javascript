@@ -1,16 +1,14 @@
-/**
- * Controller de Rutina
- * Capa de manejo HTTP - Gestiona la comunicación entre el cliente y el servicio
- */
-class RutinaController {
-  constructor(rutinaService) {
-    this.rutinaService = rutinaService;
+// controllers/rutinaEjercicioController.mjs
+
+class RutinaEjercicioController {
+  constructor(rutinaEjercicioService) {
+    this.rutinaEjercicioService = rutinaEjercicioService;
   }
 
   getAll = async (req, res) => {
     try {
-      const rutinas = await this.rutinaService.getAll();
-      res.json(rutinas);
+      const rutinaEjercicios = await this.rutinaEjercicioService.getAll();
+      res.json(rutinaEjercicios);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -19,10 +17,10 @@ class RutinaController {
   getById = async (req, res) => {
     try {
       const { id } = req.params;
-      const rutina = await this.rutinaService.getById(parseInt(id));
-      res.json(rutina);
+      const rutinaEjercicio = await this.rutinaEjercicioService.getById(parseInt(id));
+      res.json(rutinaEjercicio);
     } catch (error) {
-      if (error.message === 'Rutina no encontrada') {
+      if (error.message === 'Relación rutina-ejercicio no encontrada') {
         return res.status(404).json({ error: error.message });
       }
       if (error.message === 'ID inválido') {
@@ -32,26 +30,26 @@ class RutinaController {
     }
   };
 
-  getBySocio = async (req, res) => {
+  getByRutina = async (req, res) => {
     try {
-      const { id_socio } = req.params;
-      const rutinas = await this.rutinaService.getBySocio(parseInt(id_socio));
-      res.json(rutinas);
+      const { id_rutina } = req.params;
+      const rutinaEjercicios = await this.rutinaEjercicioService.getByRutina(parseInt(id_rutina));
+      res.json(rutinaEjercicios);
     } catch (error) {
-      if (error.message.includes('Socio no encontrado') || error.message.includes('inválido')) {
+      if (error.message === 'ID de rutina inválido') {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
     }
   };
 
-  getByNivel = async (req, res) => {
+  getByEjercicio = async (req, res) => {
     try {
-      const { nivel } = req.params;
-      const rutinas = await this.rutinaService.getByNivel(nivel);
-      res.json(rutinas);
+      const { id_ejercicio } = req.params;
+      const rutinaEjercicios = await this.rutinaEjercicioService.getByEjercicio(parseInt(id_ejercicio));
+      res.json(rutinaEjercicios);
     } catch (error) {
-      if (error.message.includes('Nivel inválido')) {
+      if (error.message === 'ID de ejercicio inválido') {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -60,14 +58,12 @@ class RutinaController {
 
   create = async (req, res) => {
     try {
-      const rutina = await this.rutinaService.create(req.body);
-      res.status(201).json(rutina);
+      const rutinaEjercicio = await this.rutinaEjercicioService.create(req.body);
+      res.status(201).json(rutinaEjercicio);
     } catch (error) {
-      if (
-        error.message.includes('requerido') || 
-        error.message.includes('nivel de dificultad') || 
-        error.message.includes('no existe')
-      ) {
+      if (error.message.includes('requerido') || 
+          error.message.includes('no existe') ||
+          error.message.includes('válido')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -77,17 +73,15 @@ class RutinaController {
   update = async (req, res) => {
     try {
       const { id } = req.params;
-      const rutina = await this.rutinaService.update(parseInt(id), req.body);
-      res.json(rutina);
+      const rutinaEjercicio = await this.rutinaEjercicioService.update(parseInt(id), req.body);
+      res.json(rutinaEjercicio);
     } catch (error) {
-      if (error.message === 'Rutina no encontrada') {
+      if (error.message === 'Relación rutina-ejercicio no encontrada') {
         return res.status(404).json({ error: error.message });
       }
-      if (
-        error.message === 'ID inválido' || 
-        error.message.includes('requerido') || 
-        error.message.includes('Nivel')
-      ) {
+      if (error.message === 'ID inválido' || 
+          error.message.includes('requerido') ||
+          error.message.includes('no existe')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -97,10 +91,10 @@ class RutinaController {
   delete = async (req, res) => {
     try {
       const { id } = req.params;
-      const result = await this.rutinaService.delete(parseInt(id));
+      const result = await this.rutinaEjercicioService.delete(parseInt(id));
       res.json(result);
     } catch (error) {
-      if (error.message === 'Rutina no encontrada') {
+      if (error.message === 'Relación rutina-ejercicio no encontrada') {
         return res.status(404).json({ error: error.message });
       }
       if (error.message === 'ID inválido') {
@@ -111,4 +105,4 @@ class RutinaController {
   };
 }
 
-export default RutinaController;
+export default RutinaEjercicioController;

@@ -1,7 +1,5 @@
-/**
- * Controller de Maquina
- * Capa de manejo HTTP - Solo gestiona request/response
- */
+// controllers/maquinaController.mjs
+
 class MaquinaController {
   constructor(maquinaService) {
     this.maquinaService = maquinaService;
@@ -45,16 +43,27 @@ class MaquinaController {
     }
   };
 
+  getByTipo = async (req, res) => {
+    try {
+      const { tipo } = req.params;
+      const maquinas = await this.maquinaService.getByTipo(tipo);
+      res.json(maquinas);
+    } catch (error) {
+      if (error.message.includes('Tipo inválido')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  };
+
   create = async (req, res) => {
     try {
       const maquina = await this.maquinaService.create(req.body);
       res.status(201).json(maquina);
     } catch (error) {
-      if (
-        error.message.includes('requerido') || 
-        error.message.includes('formato') || 
-        error.message.includes('El estado debe ser')
-      ) {
+      if (error.message.includes('requerido') || 
+          error.message.includes('formato') || 
+          error.message.includes('Ya existe')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -70,11 +79,9 @@ class MaquinaController {
       if (error.message === 'Máquina no encontrada') {
         return res.status(404).json({ error: error.message });
       }
-      if (
-        error.message === 'ID inválido' || 
-        error.message.includes('requerido') || 
-        error.message.includes('El estado debe ser')
-      ) {
+      if (error.message === 'ID inválido' || 
+          error.message.includes('requerido') || 
+          error.message.includes('Ya existe')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });

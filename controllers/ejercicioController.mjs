@@ -1,7 +1,5 @@
-/**
- * Controller de Ejercicio
- * Capa de manejo HTTP - Solo gestiona request/response
- */
+// controllers/ejercicioController.mjs
+
 class EjercicioController {
   constructor(ejercicioService) {
     this.ejercicioService = ejercicioService;
@@ -63,7 +61,9 @@ class EjercicioController {
       const ejercicio = await this.ejercicioService.create(req.body);
       res.status(201).json(ejercicio);
     } catch (error) {
-      if (error.message.includes('requerido') || error.message.includes('formato') || error.message.includes('Ya existe')) {
+      if (error.message.includes('requerido') || 
+          error.message.includes('formato') || 
+          error.message.includes('Ya existe')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
@@ -79,7 +79,9 @@ class EjercicioController {
       if (error.message === 'Ejercicio no encontrado') {
         return res.status(404).json({ error: error.message });
       }
-      if (error.message === 'ID inválido' || error.message.includes('requerido') || error.message.includes('Ya existe')) {
+      if (error.message === 'ID inválido' || 
+          error.message.includes('requerido') || 
+          error.message.includes('Ya existe')) {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: error.message });
