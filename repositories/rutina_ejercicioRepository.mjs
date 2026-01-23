@@ -1,9 +1,6 @@
-import RutinaEjercicio from '../models/rutina_ejercicio.mjs';
+// repositories/rutinaEjercicioRepository.mjs
+import RutinaEjercicio from '../models/rutinaEjercicio.mjs';
 
-/**
- * Repository de RutinaEjercicio
- * Capa de acceso a datos - Supabase + Redis caché
- */
 class RutinaEjercicioRepository {
   constructor(supabase, redisClient = null) {
     this.supabase = supabase;
@@ -15,8 +12,7 @@ class RutinaEjercicioRepository {
     if (this.redis) {
       const cached = await this.redis.get('rutina_ejercicios:all');
       if (cached) {
-        const data = JSON.parse(cached);
-        return data.map(re => new RutinaEjercicio(re));
+        return JSON.parse(cached).map(re => new RutinaEjercicio(re));
       }
     }
 
@@ -44,94 +40,92 @@ class RutinaEjercicioRepository {
       .eq('id', id)
       .single();
 
-    if (error) throw error;
+    if (error && error.code !== 'PGRST116') throw error;
     if (!data) return null;
 
-    const vinculacion = new RutinaEjercicio(data);
-    await vinculacion.saveToCache();
-
-    return vinculacion;
+    const rutinaEjercicio = new RutinaEjercicio(data);
+    await rutinaEjercicio.saveToCache();
+    return rutinaEjercicio;
   }
 
-  async findByRutina(id_rutina) {
-    const cacheKey = `rutina_ejercicios:rutina:${id_rutina}`;
-    
+  async findByRutina(idRutina) {
     if (this.redis) {
-      const cached = await this.redis.get(cacheKey);
+      const cached = await this.redis.get(`rutina_ejercicios:rutina:${idRutina}`);
       if (cached) {
-        const data = JSON.parse(cached);
-        return data.map(re => new RutinaEjercicio(re));
+        return JSON.parse(cached).map(re => new RutinaEjercicio(re));
       }
     }
 
     const { data, error } = await this.supabase
       .from('rutina_ejercicios')
       .select('*')
-      .eq('id_rutina', id_rutina);
+      .eq('id_rutina', idRutina)
+      .order('id', { ascending: true });
 
     if (error) throw error;
 
     if (this.redis && data) {
-      await this.redis.setEx(cacheKey, 300, JSON.stringify(data));
+      await this.redis.setEx(`rutina_ejercicios:rutina:${idRutina}`, 300, JSON.stringify(data));
     }
 
     return data.map(re => new RutinaEjercicio(re));
   }
 
-  async findByEjercicio(id_ejercicio) {
-    const cacheKey = `rutina_ejercicios:ejercicio:${id_ejercicio}`;
-    
+  async findByEjercicio(idEjercicio) {
     if (this.redis) {
-      const cached = await this.redis.get(cacheKey);
+      const cached = await this.redis.get(`rutina_ejercicios:ejercicio:${idEjercicio}`);
       if (cached) {
-        const data = JSON.parse(cached);
-        return data.map(re => new RutinaEjercicio(re));
+        return JSON.parse(cached).map(re => new RutinaEjercicio(re));
       }
     }
 
     const { data, error } = await this.supabase
       .from('rutina_ejercicios')
       .select('*')
-      .eq('id_ejercicio', id_ejercicio);
+      .eq('id_ejercicio', idEjercicio)
+      .order('id', { ascending: true });
 
     if (error) throw error;
 
     if (this.redis && data) {
-      await this.redis.setEx(cacheKey, 300, JSON.stringify(data));
+      await this.redis.setEx(`rutina_ejercicios:ejercicio:${idEjercicio}`, 300, JSON.stringify(data));
     }
 
     return data.map(re => new RutinaEjercicio(re));
   }
 
-  async create(reData) {
+  async create(rutinaEjercicioData) {
     const { data, error } = await this.supabase
       .from('rutina_ejercicios')
       .insert({
-        id_rutina: reData.id_rutina,
-        id_ejercicio: reData.id_ejercicio,
-        series: reData.series || 0,
-        repeticiones: reData.repeticiones || 0
+        id_rutina: rutinaEjercicioData.id_rutina,
+        id_ejercicio: rutinaEjercicioData.id_ejercicio,
+        series: rutinaEjercicioData.series || 0,
+        repeticiones: rutinaEjercicioData.repeticiones || 0
       })
       .select()
       .single();
 
     if (error) throw error;
 
-    const vinculacion = new RutinaEjercicio(data);
-    // El método invalidateCache del modelo borra las claves de la rutina y del ejercicio
-    await vinculacion.invalidateCache();
-
-    return vinculacion;
+    const rutinaEjercicio = new RutinaEjercicio(data);
+    await rutinaEjercicio.invalidateCache();
+    return rutinaEjercicio;
   }
 
-  async update(id, reData) {
+  async update(id, rutinaEjercicioData) {
+    const updateData = {
+      updated_at: new Date().toISOString()
+    };
+
+    if (rutinaEjercicioData.id_rutina !== undefined) updateData.id_rutina = rutinaEjercicioData.id_rutina;
+    if (rutinaEjercicioData.id_ejercicio !== undefined) updateData.id_ejercicio = rutinaEjercicioData.id_ejercicio;
+    if (rutinaEjercicioData.series !== undefined) updateData.series = rutinaEjercicioData.series;
+    if (rutinaEjercicioData.repeticiones !== undefined) updateData.repeticiones = rutinaEjercicioData.repeticiones;
+
     const { data, error } = await this.supabase
       .from('rutina_ejercicios')
-      .update({
-        series: reData.series,
-        repeticiones: reData.repeticiones,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -139,16 +133,13 @@ class RutinaEjercicioRepository {
     if (error) throw error;
     if (!data) return null;
 
-    const vinculacion = new RutinaEjercicio(data);
-    await vinculacion.invalidateCache();
-
-    return vinculacion;
+    const rutinaEjercicio = new RutinaEjercicio(data);
+    await rutinaEjercicio.invalidateCache();
+    return rutinaEjercicio;
   }
 
   async delete(id) {
-    // Muy importante: obtener antes de borrar para saber qué id_rutina e id_ejercicio
-    // tenía y poder limpiar sus respectivos listados en la caché de Redis
-    const vinculacion = await this.findById(id);
+    const rutinaEjercicio = await this.findById(id);
 
     const { error } = await this.supabase
       .from('rutina_ejercicios')
@@ -157,8 +148,8 @@ class RutinaEjercicioRepository {
 
     if (error) throw error;
 
-    if (vinculacion) {
-      await vinculacion.invalidateCache();
+    if (rutinaEjercicio) {
+      await rutinaEjercicio.invalidateCache();
     }
 
     return true;
