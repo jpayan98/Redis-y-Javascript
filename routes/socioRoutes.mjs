@@ -20,9 +20,14 @@ const filterOwnProfile = (req, res, next) => {
 
 /**
  * Middleware para filtrar listado según rol
+ * Si es user, redirige a su propio perfil
  */
 const filterSociosList = async (req, res, next) => {
-  // Guardar el rol para que el controller lo use
+  // Si es user, redirigir a su propio perfil
+  if (req.client.role === 'user') {
+    return res.redirect(307, `/api/socios/${req.client.id}`);
+  }
+  // DBA y Admin continúan normal
   req.userRole = req.client.role;
   req.userId = req.client.id;
   next();
