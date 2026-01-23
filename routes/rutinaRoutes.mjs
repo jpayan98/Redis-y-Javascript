@@ -1,60 +1,100 @@
-// routes/rutinaEjercicioRoutes.mjs
+// routes/rutinaRoutes.mjs
 import { Router } from 'express';
 import { checkPermission } from '../middlewares/roleMiddleware.mjs';
 
-const createRutinaEjercicioRoutes = (rutinaEjercicioController) => {
+/**
+ * Middleware para filtrar rutinas según rol
+ * Si es user, redirige a sus propias rutinas
+ */
+const filterRutinasList = (req, res, next) => {
+    // Si es user, redirigir a sus propias rutinas
+    if (req.client.role === 'user') {
+        return res.redirect(307, `/api/rutinas/socio/${req.client.id}`);
+    }
+    // DBA y Admin continúan normal
+    next();
+};
+
+/**
+ * Middleware para verificar que un user solo acceda a sus propias rutinas
+ */
+const filterOwnRutinas = (req, res, next) => {
+    if (req.client.role === 'user') {
+        const requestedSocioId = parseInt(req.params.id_socio);
+        if (requestedSocioId !== req.client.id) {
+            return res.status(403).json({
+                error: 'Acceso denegado',
+                message: 'Solo puedes ver tus propias rutinas'
+            });
+        }
+    }
+    next();
+};
+
+const createRutinaRoutes = (rutinaController) => {
     const router = Router();
 
-    // GET /rutina-ejercicios - Listar todas las relaciones
-    // Todos pueden ver
+    // GET /rutinas - Listar rutinas
+    // User: solo las suyas, Admin/DBA: todas
     router.get('/',
         checkPermission('rutinas', 'read'),
-        rutinaEjercicioController.getAll
+        filterRutinasList,
+        rutinaController.getAll
     );
 
-    // GET /rutina-ejercicios/rutina/:id_rutina - Filtrar por rutina
-    // Todos pueden ver
-    router.get('/rutina/:id_rutina',
+    // GET /rutinas/socio/:id_socio - Filtrar por socio
+    // User solo puede ver las suyas
+    router.get('/socio/:id_socio',
         checkPermission('rutinas', 'read'),
-        rutinaEjercicioController.getByRutina
+        filterOwnRutinas,
+        rutinaController.getBySocio
     );
 
-    // GET /rutina-ejercicios/ejercicio/:id_ejercicio - Filtrar por ejercicio
-    // Todos pueden ver
-    router.get('/ejercicio/:id_ejercicio',
+    // GET /rutinas/nivel/:nivel - Filtrar por nivel de dificultad
+    // Solo Admin y DBA
+    router.get('/nivel/:nivel',
         checkPermission('rutinas', 'read'),
-        rutinaEjercicioController.getByEjercicio
+        (req, res, next) => {
+            if (req.client.role === 'user') {
+                return res.status(403).json({
+                    error: 'Acceso denegado',
+                    message: 'No tienes permisos para filtrar rutinas por nivel'
+                });
+            }
+            next();
+        },
+        rutinaController.getByNivel
     );
 
-    // GET /rutina-ejercicios/:id - Obtener por ID
-    // Todos pueden ver
+    // GET /rutinas/:id - Obtener rutina por ID
+    // Todos pueden ver (pero se valida en controller que user solo vea las suyas)
     router.get('/:id',
         checkPermission('rutinas', 'read'),
-        rutinaEjercicioController.getById
+        rutinaController.getById
     );
 
-    // POST /rutina-ejercicios - Crear nueva relación
-    // Solo admin y dba
+    // POST /rutinas - Crear nueva rutina
+    // Solo Admin y DBA
     router.post('/',
         checkPermission('rutinas', 'create'),
-        rutinaEjercicioController.create
+        rutinaController.create
     );
 
-    // PUT /rutina-ejercicios/:id - Actualizar relación
-    // Solo admin y dba
+    // PUT /rutinas/:id - Actualizar rutina
+    // Solo Admin y DBA
     router.put('/:id',
         checkPermission('rutinas', 'update'),
-        rutinaEjercicioController.update
+        rutinaController.update
     );
 
-    // DELETE /rutina-ejercicios/:id - Eliminar relación
-    // Solo admin y dba
+    // DELETE /rutinas/:id - Eliminar rutina
+    // Solo Admin y DBA
     router.delete('/:id',
         checkPermission('rutinas', 'delete'),
-        rutinaEjercicioController.delete
+        rutinaController.delete
     );
 
     return router;
 };
 
-export default createRutinaEjercicioRoutes;
+export default createRutinaRoutes;
